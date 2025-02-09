@@ -8,29 +8,49 @@
 import XCTest
 @testable import UserManagementApp
 
-final class UserManagementAppTests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+final class UserListViewModelTests: XCTestCase {
+    
+    var viewModel: UserListViewModel!
+    var mockRepository: MockUserRepository!
+    
+    override func setUp() {
+        super.setUp()
+        mockRepository = MockUserRepository()
+        viewModel = UserListViewModel(repository: mockRepository)
     }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    override func tearDown() {
+        viewModel = nil
+        mockRepository = nil
+        super.tearDown()
     }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
-    }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+    
+    /// Tests whether the ViewModel correctly receives users when the API call is successful
+    func testFetchUsers_Success() {
+        let expectation = XCTestExpectation(description: "Users fetched successfully")
+        
+        viewModel.onDataUpdated = {
+            expectation.fulfill()
         }
+        
+        viewModel.fetchUsers()
+        
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertEqual(viewModel.users.count, 2, "Mock API 2 kullanıcı döndürmeli")
     }
-
+    
+    /// Tests whether the ViewModel displays an error message when the API call fails
+    func testFetchUsers_Failure() {
+        let expectation = XCTestExpectation(description: "Error returned due to no data")
+        
+        mockRepository.shouldReturnError = true
+        viewModel.onError = { errorMessage in
+            XCTAssertEqual(errorMessage, NetworkError.noData.localizedDescription)
+            expectation.fulfill()
+        }
+        
+        viewModel.fetchUsers()
+        
+        wait(for: [expectation], timeout: 2.0)
+    }
 }
